@@ -1310,6 +1310,8 @@ cdef class SAM_Alignment( AlignmentWithSequenceReversal ):
                strand = "+"           
             alnmt.mate_start = GenomicPosition( mrnm, posint, strand )   
             if alnmt.mate_start.chrom == "=":
+               if alnmt.iv is None:
+                   raise ValueError( "Cannot handle this line. Mate is paired, but this read is not%s." % lineid )
                alnmt.mate_start.chrom = alnmt.iv.chrom
          if flagint & 0x0040:
             alnmt.pe_which = intern( "first" )
