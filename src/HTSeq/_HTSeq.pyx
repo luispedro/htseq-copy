@@ -1237,7 +1237,7 @@ cdef class SAM_Alignment( AlignmentWithSequenceReversal ):
       return a
          
    @classmethod
-   def from_SAM_line( cls, line ):
+   def from_SAM_line( cls, line, lineid=None ):
       cdef str qname, flag, rname, pos, mapq, cigar, 
       cdef str mrnm, mpos, isize, seq, qual
       cdef list optional_fields
@@ -1245,28 +1245,34 @@ cdef class SAM_Alignment( AlignmentWithSequenceReversal ):
       cdef str strand
       cdef list cigarlist
       cdef SequenceWithQualities swq
+
+      if lineid is None:
+          lineid = ""
+      else:
+          lineid = " [line %s]" % lineid
             
       fields = line.rstrip().split( "\t" )
       if len( fields ) < 10:
-         raise ValueError, "SAM line does not contain at least 11 tab-delimited fields."
+         raise ValueError( "SAM line does not contain at least 11 tab-delimited fields%s." % lineid )
       (qname, flag, rname, pos, mapq, cigar, mrnm, mpos, isize, 
          seq, qual) = fields[ 0:11 ]
       optional_fields = fields[ 11: ]      
       
       if seq.count( "=" ) > 0:
-         raise ValueError, "Sequence in SAM file contains '=', which is not supported."
+         raise ValueError( "Sequence in SAM file contains '=', which is not supported%s." % lineid )
       if seq.count( "." ) > 0:
-         raise ValueError, "Sequence in SAM file contains '.', which is not supported."
+         raise ValueError( "Sequence in SAM file contains '.', which is not supported%s." % lineid )
       flagint = int( flag )
       
       if flagint & 0x0004:     # flag "query sequence is unmapped" 
          iv = None
          cigarlist = None
          if rname != "*":     # flag "query sequence is unmapped"      
-            warnings.warn( "Malformed SAM line: RNAME != '*' although flag bit &0x0004 set" )
+            warnings.warn( "Malformed SAM line: RNAME != '*' although flag bit &0x0004 set.%s" % lineid )
+            rname = '*'
       else:
          if rname == "*":
-            raise ValueError, "Malformed SAM line: RNAME == '*' although flag bit &0x0004 cleared"
+            raise ValueError( "Malformed SAM line: RNAME == '*' although flag bit &0x0004 cleared%s." % lineid )
          posint = int( pos ) - 1   # SAM is one-based, but HTSeq is zero-based!
          if flagint & 0x0010:      # flag "strand of the query"
             strand = "-"
@@ -1291,11 +1297,12 @@ cdef class SAM_Alignment( AlignmentWithSequenceReversal ):
       if flagint & 0x0001:         # flag "read is paired in sequencing"
          if flagint & 0x0008:      # flag "mate is unmapped"
             if mrnm != "*":
-               warnings.warn( "Malformed SAM line: MRNM != '*' although flag bit &0x0008 set" )
+               warnings.warn( "Malformed SAM line: MRNM != '*' although flag bit &0x0008 set%s." % lineid )
+               mrnm = '*'
             alnmt.mate_start = None
          else:
             if mrnm == "*":
-               raise ValueError, "Malformed SAM line: MRNM == '*' although flag bit &0x0008 cleared"               
+                raise ValueError( "Malformed SAM line: MRNM == '*' although flag bit &0x0008 cleared%s." % lineid )
             posint = int( mpos ) - 1
             if flagint & 0x0020:   # flag "strand of the mate"
                strand = "-"

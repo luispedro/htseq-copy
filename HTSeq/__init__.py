@@ -535,12 +535,12 @@ class SAM_Reader( FileOrSequence ):
    objects."""
 
    def __iter__( self ):
-      for line in FileOrSequence.__iter__( self ):
+      for linenr, line in enumerate(FileOrSequence.__iter__( self )):
          if line.startswith( "@" ):
             # do something with the header line
             continue
          try:
-            algnt = SAM_Alignment.from_SAM_line( line )
+            algnt = SAM_Alignment.from_SAM_line( line, linenr )
          except ValueError, e:
             e.args = e.args + ( self.get_line_number_string(), )
             raise
